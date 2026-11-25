@@ -1,0 +1,626 @@
+<title>Three-Body Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an observatory console. The live sky (canvas) is the hero; instruments sit beside it, the history reads below. Dark-first. */
+:root {
+  --bg: #0b0f1d;
+  --panel: #121a2e;
+  --line: #243052;
+  --fg: #e4e8f3;
+  --muted: #8d97b5;
+  --accent: #f2b544;
+  --b1: #f2b544;
+  --b2: #6cc4e2;
+  --b3: #ec7d88;
+  --sky: #070a15;
+  --grid: rgba(140,160,210,0.07);
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #eef0f6; --panel: #ffffff; --line: #d3d8e6; --fg: #141a2d; --muted: #586181;
+    --accent: #a8650c; --b1: #c47f0e; --b2: #1f87ad; --b3: #c2404f; --sky: #fbfbfd;
+    --grid: rgba(40,60,110,0.07); color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #eef0f6; --panel: #ffffff; --line: #d3d8e6; --fg: #141a2d; --muted: #586181;
+  --accent: #a8650c; --b1: #c47f0e; --b2: #1f87ad; --b3: #c2404f; --sky: #fbfbfd;
+  --grid: rgba(40,60,110,0.07); color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 1.55rem; font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font: 500 0.72rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+header { display: flex; flex-direction: column; gap: 10px; max-width: 70ch; }
+header p { color: var(--muted); font-size: 1.02rem; }
+header .eq { font-family: var(--mono); color: var(--accent); font-size: 0.85rem; }
+
+/* ---------- lab ---------- */
+.lab { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .lab { grid-template-columns: minmax(0, 1fr); } }
+.stage { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sky {
+  position: relative; width: 100%; aspect-ratio: 16 / 10; max-width: 100%;
+  background: var(--sky); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+}
+@media (max-width: 600px) { .sky { aspect-ratio: 1 / 1; } }
+.sky canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.overlay { position: absolute; left: 12px; top: 10px; right: 12px; display: flex; justify-content: space-between; gap: 12px; pointer-events: none; font: 0.78rem/1.4 var(--mono); color: var(--muted); }
+.overlay b { color: var(--fg); font-weight: 500; }
+.legend { position: absolute; left: 12px; bottom: 10px; display: flex; gap: 14px; flex-wrap: wrap; font: 0.75rem var(--mono); color: var(--muted); pointer-events: none; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend i.ghost { background: transparent !important; border: 1.5px solid var(--muted); }
+
+.readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+@media (max-width: 600px) { .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.readout { background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.readout .v { font: 500 1.05rem var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.chartbox { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 6px; }
+.chartbox .head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.chartbox canvas { width: 100%; height: 150px; display: block; }
+
+/* ---------- panel ---------- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.presets { display: flex; flex-direction: column; gap: 4px; }
+.preset {
+  all: unset; box-sizing: border-box; cursor: pointer; padding: 7px 10px; border-radius: 7px;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+.preset:hover { background: color-mix(in srgb, var(--fg) 6%, transparent); }
+.preset[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.preset:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tag { font: 500 0.66rem/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
+.tag.chaos { color: var(--b3); background: color-mix(in srgb, var(--b3) 14%, transparent); }
+.tag.periodic { color: var(--b2); background: color-mix(in srgb, var(--b2) 14%, transparent); }
+.tag.exact { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.tag.approx { color: var(--muted); background: color-mix(in srgb, var(--muted) 14%, transparent); }
+
+.about { font-size: 0.86rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.about h3 { color: var(--fg); font-size: 0.98rem; }
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button.btn {
+  font: 500 0.86rem var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line);
+  border-radius: 7px; padding: 7px 12px; cursor: pointer;
+}
+button.btn:hover { border-color: var(--muted); }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--sky); font-weight: 600; }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 0.84rem; }
+.slider label { color: var(--muted); }
+.slider output { font: 0.8rem var(--mono); color: var(--fg); text-align: right; }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.check { display: flex; gap: 8px; align-items: center; font-size: 0.86rem; cursor: pointer; }
+.check input { accent-color: var(--accent); }
+.hint { font-size: 0.76rem; color: var(--muted); }
+
+/* ---------- reading ---------- */
+.reading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+@media (max-width: 900px) { .reading { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+.prose { display: flex; flex-direction: column; gap: 14px; max-width: 66ch; min-width: 0; }
+.prose p { color: color-mix(in srgb, var(--fg) 88%, var(--muted)); }
+.prose strong { color: var(--fg); font-weight: 600; }
+.callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; color: var(--fg) !important; }
+
+.timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.timeline li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.timeline li:first-child { border-top: 0; }
+.timeline .yr { font: 500 0.9rem var(--mono); color: var(--accent); padding-top: 1px; }
+.timeline .what { font-size: 0.9rem; color: color-mix(in srgb, var(--fg) 85%, var(--muted)); }
+.timeline .what b { color: var(--fg); font-weight: 600; }
+.timeline a { color: inherit; }
+
+/* ---------- ensemble ---------- */
+.ensemble { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 28px; }
+@media (max-width: 900px) { .ensemble { grid-template-columns: minmax(0, 1fr); } }
+.ens-controls { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.masses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.masses label { display: flex; flex-direction: column; gap: 4px; font: 0.76rem var(--mono); color: var(--muted); }
+.masses input, select {
+  font: 0.95rem var(--mono); color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; width: 100%;
+}
+.bars { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bar { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) 4.2rem; gap: 10px; align-items: center; font-size: 0.86rem; }
+.bar .track { height: 18px; background: color-mix(in srgb, var(--fg) 6%, transparent); border-radius: 4px; overflow: hidden; }
+.bar .fill { height: 100%; width: 0; border-radius: 4px; transition: width 0.25s ease; }
+.bar .pct { font: 0.84rem var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.progress { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.progress div { height: 100%; width: 0; background: var(--accent); }
+
+footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); padding-top: 16px; }
+footer a { color: inherit; }
+@media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Celestial mechanics · G = 1</span>
+    <h1>Three-Body Lab</h1>
+    <p>Two gravitating bodies trace ellipses you can write down in one line. Add a third and the formula disappears. Below are the exact special cases, the periodic orbits found by computer, and the chaos in between. The pale rings are a shadow copy started one part in a million away.</p>
+    <span class="eq">r̈ᵢ = Σⱼ≠ᵢ G mⱼ (rⱼ − rᵢ) / |rⱼ − rᵢ|³</span>
+  </header>
+
+  <section class="lab" aria-label="Simulator">
+    <div class="stage">
+      <div class="sky" id="sky">
+        <canvas id="cv" aria-label="Three-body simulation"></canvas>
+        <div class="overlay"><span id="ovName"></span><span>t = <b id="ovT">0.00</b></span></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="readouts">
+        <div class="readout"><span class="eyebrow">Energy drift</span><span class="v" id="rE">0</span></div>
+        <div class="readout"><span class="eyebrow">Shadow gap</span><span class="v" id="rD">—</span></div>
+        <div class="readout"><span class="eyebrow">Amplified</span><span class="v" id="rA">—</span></div>
+        <div class="readout"><span class="eyebrow">Prediction horizon</span><span class="v" id="rH">—</span></div>
+      </div>
+      <div class="chartbox">
+        <div class="head">
+          <span class="eyebrow">Gap between original and shadow · log₁₀ phase-space distance</span>
+          <span class="hint">Dashed line: gap of 0.1, roughly where a forecast stops meaning anything</span>
+        </div>
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="group">
+        <span class="eyebrow">Configurations</span>
+        <div class="presets" id="presets"></div>
+      </div>
+      <div class="group">
+        <div class="row">
+          <button class="btn primary" id="play">Pause</button>
+          <button class="btn" id="restart">Restart</button>
+          <button class="btn" id="fit">Fit view</button>
+        </div>
+        <div class="slider">
+          <label for="speed">Speed</label><output id="speedOut"></output>
+          <input type="range" id="speed" min="-2" max="5" step="0.25" value="0">
+        </div>
+        <div class="slider">
+          <label for="eps">Shadow offset</label><output id="epsOut"></output>
+          <input type="range" id="eps" min="-12" max="-1" step="1" value="-6">
+        </div>
+        <label class="check"><input type="checkbox" id="ghostOn" checked> Show shadow copy</label>
+        <label class="check"><input type="checkbox" id="trailsOn" checked> Trails</label>
+        <span class="hint">Space pauses. Drag to pan, scroll or pinch to zoom. Changing the offset restarts the run.</span>
+      </div>
+      <div class="about" id="about"></div>
+    </aside>
+  </section>
+
+  <section class="reading">
+    <div class="prose">
+      <span class="eyebrow">The problem</span>
+      <h2>Why there is no formula</h2>
+      <p>Newton solved two bodies completely in 1687: each follows a conic section, and you can read its position at any time off a closed expression. The two-body problem has enough conserved quantities (energy, momentum, angular momentum, and the orbit's orientation) to pin the motion down.</p>
+      <p>Three bodies have 18 degrees of freedom in 3D and only 10 classical conserved quantities. In 1887 Bruns showed there are no other algebraic integrals, and Poincaré (1890) extended that to analytic ones. Without more integrals, the motion can't be reduced to quadratures. While proving this, Poincaré found trajectories that tangle so densely that tiny changes in the start send them anywhere. That observation is the origin of chaos theory.</p>
+      <p>A solution does exist. <strong>Karl Sundman proved in 1912</strong> that, unless all three collide at once, the motion is given by a convergent power series. It is useless in practice: getting astronomical accuracy would take on the order of 10<sup>8,000,000</sup> terms.</p>
+      <p class="callout">So "unsolvable" means no closed form and no long-range shortcut. The trajectory is fully determined, and a computer can follow it as precisely as you can afford. In a chaotic case each extra digit of starting precision buys roughly the same fixed amount of extra forecast time. Drag the shadow-offset slider from 10⁻³ to 10⁻¹² on the Pythagorean case and watch the horizon move only a little.</p>
+      <p>That leaves three kinds of answer, all in the simulator: exact special solutions, periodic orbits found by search, and statistical predictions of how a chaotic encounter ends.</p>
+    </div>
+    <div class="prose">
+      <span class="eyebrow">What "solved" has meant</span>
+      <h2>Three centuries of partial answers</h2>
+      <ol class="timeline">
+        <li><span class="yr">1767</span><span class="what"><b>Euler:</b> three bodies on a rotating straight line. Exact, but unstable.</span></li>
+        <li><span class="yr">1772</span><span class="what"><b>Lagrange:</b> the rotating equilateral triangle, for any masses. Stable only when one mass dominates. Jupiter's Trojan asteroids sit in it.</span></li>
+        <li><span class="yr">1887–90</span><span class="what"><b>Bruns, Poincaré:</b> no further integrals exist, so there is no general closed-form solution. Chaos is discovered.</span></li>
+        <li><span class="yr">1912</span><span class="what"><b>Sundman:</b> a convergent series solution exists. Far too slow to use.</span></li>
+        <li><span class="yr">1913</span><span class="what"><b>Burrau</b> poses the Pythagorean problem. In 1967 Szebehely and Peters compute it to the end: the lightest body is ejected.</span></li>
+        <li><span class="yr">1993</span><span class="what"><b>Moore</b> finds the figure-eight numerically. Chenciner and Montgomery prove it exists in 2000.</span></li>
+        <li><span class="yr">2013</span><span class="what"><b>Šuvakov and Dmitrašinović</b> find 13 new periodic families (butterfly, moth, yin-yang…) by computer search.</span></li>
+        <li><span class="yr">2017+</span><span class="what"><b>Li and Liao</b> report hundreds of families on a supercomputer. A 2023 search by Hristov and colleagues lists about 12,000 equal-mass free-fall orbits.</span></li>
+        <li><span class="yr">2019</span><span class="what"><b>Stone and Leigh</b> (Nature) give a statistical solution: for a chaotic encounter, the probability of each outcome, not the path. Ginat and Perets (2021) do the same with a random-walk model.</span></li>
+        <li><span class="yr">2026</span><span class="what">Claims of a general exact solution keep appearing as unreviewed preprints, including one on Zenodo in March 2026. None has been accepted, and a closed form would contradict Bruns and Poincaré unless it redefines the question.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="ensemble" aria-label="Statistical outcomes">
+    <div class="ens-controls">
+      <span class="eyebrow">The statistical solution</span>
+      <h2>Who gets thrown out?</h2>
+      <p class="muted">You can't predict one chaotic encounter, but you can predict many. Start three bodies at random in a bound cluster and run until one escapes for good. The statistical theories predict that the lightest body is ejected most often, leaving the heavier two as a binary. Run it yourself.</p>
+      <div class="masses">
+        <label for="m1">Mass A<input id="m1" type="number" min="0.1" max="10" step="0.1" value="1"></label>
+        <label for="m2">Mass B<input id="m2" type="number" min="0.1" max="10" step="0.1" value="2"></label>
+        <label for="m3">Mass C<input id="m3" type="number" min="0.1" max="10" step="0.1" value="3"></label>
+      </div>
+      <div class="row">
+        <label for="runs" class="hint">Encounters</label>
+        <select id="runs" style="width:auto"><option>100</option><option selected>300</option><option>1000</option></select>
+        <button class="btn primary" id="ensRun">Run encounters</button>
+      </div>
+      <div class="progress"><div id="ensProg"></div></div>
+      <span class="hint" id="ensStatus">Runs in a background thread. 300 encounters take roughly 10–20 seconds.</span>
+    </div>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <footer>
+    Integrator: adaptive Dormand–Prince 5(4), relative tolerance 10⁻¹¹, no softening. Close encounters are resolved by shrinking the step, not by smoothing the force. Units: G = 1, motion in the plane.
+    Figure-eight initial conditions from Chenciner &amp; Montgomery (2000). Butterfly and moth from Šuvakov &amp; Dmitrašinović, <i>Phys. Rev. Lett.</i> 110, 114301 (2013).
+  </footer>
+</div>
+
+<script>
+/*PHYSICS*/
+</script>
+<script>
+(function () {
+  "use strict";
+  const T = window.ThreeBody;
+
+  const PRESETS = [
+    { key: "pythagorean", name: "Pythagorean", tag: ["chaos", "Chaotic"], R: 4.2, speed: 1.5,
+      title: "Pythagorean problem · Burrau, 1913",
+      text: "Masses 3, 4 and 5 start at rest at the corners of a 3-4-5 right triangle. After about 60 time units of close passes, the lightest body (mass 3) is ejected and the other two leave as a binary. Watch the shadow copy split from the original around t ≈ 40." },
+    { key: "figure8", name: "Figure-eight", tag: ["periodic", "Stable orbit"], R: 1.35, speed: 0,
+      title: "Figure-eight · Moore 1993, Chenciner & Montgomery 2000",
+      text: "Three equal masses chase each other around one curve, period ≈ 6.33. The orbit is linearly stable: the shadow drifts only slowly along the orbit and never flies off." },
+    { key: "butterfly", name: "Butterfly I", tag: ["periodic", "Periodic"], R: 1.3, speed: 0,
+      title: "Butterfly I · Šuvakov & Dmitrašinović, 2013",
+      text: "One of the 13 families found by computer search in 2013. The published starting velocities have five digits, so the computed orbit only nearly closes. Leave it running and the orbit falls apart; the shadow shows how fast." },
+    { key: "moth", name: "Moth I", tag: ["periodic", "Periodic"], R: 1.5, speed: 0.5,
+      title: "Moth I · Šuvakov & Dmitrašinović, 2013",
+      text: "Another 2013 family, period ≈ 14.89. Equal masses, zero angular momentum, the third body starting at the centre." },
+    { key: "lagrangeEqual", name: "Lagrange triangle", tag: ["exact", "Exact · unstable"], R: 1.6, speed: 0.5,
+      title: "Lagrange equilateral solution, 1772 · equal masses",
+      text: "An exact solution: the triangle spins rigidly forever, in theory. With equal masses it is unstable, so a 10⁻⁶ nudge, or the integrator's own rounding, grows until the triangle breaks apart around t ≈ 20." },
+    { key: "lagrangeTrojan", name: "Trojan triangle", tag: ["exact", "Exact · stable"], R: 1.4, speed: 1,
+      title: "Lagrange solution with a dominant mass",
+      text: "Same triangle, with masses 1 : 0.01 : 0.0001, roughly a Sun, a Jupiter and a Trojan asteroid. That satisfies Routh's stability criterion, 27(m₁m₂ + m₂m₃ + m₃m₁) < (m₁ + m₂ + m₃)², so the triangle holds." },
+    { key: "euler", name: "Euler line", tag: ["exact", "Exact · unstable"], R: 1.4, speed: 0,
+      title: "Euler collinear solution, 1767",
+      text: "Three equal masses on a rotating line, the middle one fixed at the centre. Exact and violently unstable: it breaks up within about one rotation." },
+    { key: "hierarchical", name: "Star, planet, moon", tag: ["approx", "Near-Keplerian"], R: 1.3, speed: 0,
+      title: "Hierarchical triple",
+      text: "With lopsided masses and distances the problem splits into two near-Kepler problems (star and planet, planet and moon) plus small corrections. Perturbation theory has handled lunar orbits this way since the 1700s, and it works here." },
+    { key: "random", name: "Random start", tag: ["chaos", "Chaotic"], R: 2.2, speed: 1,
+      title: "Random bound start",
+      text: "Three equal masses at random positions with total energy below zero. Almost every such start is chaotic and ends with one body ejected. Click again for a new start." },
+  ];
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const cv = $("cv"), ctx = cv.getContext("2d"), chart = $("chart"), cctx = chart.getContext("2d");
+  let colors = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    ["bg","panel","line","fg","muted","accent","b1","b2","b3","sky","grid"].forEach(k => colors[k] = cs.getPropertyValue("--" + k).trim());
+    colors.bodies = [colors.b1, colors.b2, colors.b3];
+  }
+  readColors();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
+  new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---------- state ----------
+  let preset = PRESETS[0], sys, ghost, trails, gtrails, sepHist, horizon, E0;
+  let running = true, epsExp = -6, speedExp = 0;
+  const view = { R: 4, cx: 0, cy: 0 };
+  const TRAIL_MAX = 2400;
+
+  function hexA(c, a) {
+    if (c.startsWith("#")) {
+      const n = parseInt(c.length === 4 ? c.replace(/#(.)(.)(.)/, "$1$1$2$2$3$3") : c.slice(1), 16);
+      return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+    }
+    return c;
+  }
+
+  function load(p, keepView) {
+    preset = p;
+    const init = p.key === "random" ? T.randomBound(Math.random, [1, 1, 1]) : T.presets[p.key]();
+    p._init = init;
+    restart(keepView);
+    document.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", b.dataset.key === p.key));
+    $("about").innerHTML = `<h3>${p.title}</h3><p>${p.text}</p><p class="mono" style="font-size:0.78rem">masses ${init.masses.map(fmtM).join(" · ")}</p>`;
+    $("ovName").textContent = p.name;
+    $("legend").innerHTML = init.masses.map((m, i) => `<span><i style="background:var(--b${i + 1})"></i>m = ${fmtM(m)}</span>`).join("") +
+      `<span><i class="ghost"></i>shadow</span>`;
+    speedExp = p.speed; $("speed").value = speedExp; showSpeed();
+  }
+  function fmtM(m) { return m >= 0.01 ? String(+m.toFixed(3)) : m.toExponential(0); }
+
+  function restart(keepView) {
+    const init = preset._init;
+    sys = new T.System(init.state, init.masses);
+    ghost = new T.System(init.state, init.masses);
+    ghost.s[0] += Math.pow(10, epsExp);
+    E0 = sys.energy();
+    trails = [[], [], []]; gtrails = [[], [], []];
+    sepHist = [[0, epsExp]]; horizon = null;
+    if (!keepView) { view.R = preset.R; view.cx = 0; view.cy = 0; }
+    pushTrail();
+  }
+
+  function pushTrail() {
+    for (let i = 0; i < 3; i++) {
+      trails[i].push(sys.s[4*i], sys.s[4*i+1]);
+      gtrails[i].push(ghost.s[4*i], ghost.s[4*i+1]);
+      if (trails[i].length > TRAIL_MAX * 2) { trails[i].splice(0, 2); gtrails[i].splice(0, 2); }
+    }
+  }
+  function gap() {
+    let d = 0; for (let q = 0; q < 12; q++) d += (sys.s[q] - ghost.s[q]) ** 2;
+    return Math.sqrt(d);
+  }
+
+  // ---------- stepping ----------
+  let last = performance.now();
+  function frame(now) {
+    const dtReal = Math.min(0.05, (now - last) / 1000); last = now;
+    if (running) {
+      const dt = dtReal * Math.pow(2, speedExp);
+      const n = Math.max(1, Math.min(40, Math.ceil(dt / 0.01)));
+      const t0 = performance.now();
+      for (let k = 0; k < n; k++) {
+        const target = sys.t + dt / n;
+        sys.advanceTo(target, 20000);
+        ghost.advanceTo(sys.t, 20000);
+        pushTrail();
+        const d = gap();
+        const lg = Math.log10(Math.max(d, 1e-16));
+        const lastH = sepHist[sepHist.length - 1];
+        if (sys.t - lastH[0] > 0.02) sepHist.push([sys.t, lg]);
+        if (horizon === null && d > 0.1) horizon = sys.t;
+        if (performance.now() - t0 > 14) break; // keep the UI responsive during close encounters
+      }
+    }
+    draw(); drawChart(); updateReadouts();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- drawing ----------
+  let W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const r = cv.getBoundingClientRect(); W = r.width; H = r.height;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    const c = chart.getBoundingClientRect();
+    chart.width = Math.round(c.width * DPR); chart.height = Math.round(c.height * DPR);
+  }
+  new ResizeObserver(resize).observe($("sky"));
+  new ResizeObserver(resize).observe(chart);
+
+  function scale() { return Math.min(W, H) / (2 * view.R); }
+  function toScreen(x, y) { const k = scale(); return [W / 2 + (x - view.cx) * k, H / 2 - (y - view.cy) * k]; }
+
+  function drawTrail(pts, color, alphaMax, width, dash) {
+    const len = pts.length / 2; if (len < 2) return;
+    const segs = 10, per = Math.ceil(len / segs);
+    ctx.lineWidth = width; ctx.lineJoin = "round"; ctx.setLineDash(dash || []);
+    for (let s = 0; s < segs; s++) {
+      const a = s * per, b = Math.min(len - 1, (s + 1) * per);
+      if (b <= a) continue;
+      ctx.strokeStyle = hexA(color, alphaMax * (s + 1) / segs);
+      ctx.beginPath();
+      let p = toScreen(pts[2*a], pts[2*a+1]); ctx.moveTo(p[0], p[1]);
+      for (let i = a + 1; i <= b; i++) { p = toScreen(pts[2*i], pts[2*i+1]); ctx.lineTo(p[0], p[1]); }
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  function radius(m) { return Math.max(3, 7 * Math.cbrt(m / Math.max(...sys.m))); }
+
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = colors.sky; ctx.fillRect(0, 0, W, H);
+    // grid, one line per unit length
+    const k = scale(); let stepU = 1; while (stepU * k < 40) stepU *= 2; while (stepU * k > 160) stepU /= 2;
+    ctx.strokeStyle = colors.grid; ctx.lineWidth = 1; ctx.beginPath();
+    const x0 = view.cx - W / 2 / k, x1 = view.cx + W / 2 / k, y0 = view.cy - H / 2 / k, y1 = view.cy + H / 2 / k;
+    for (let x = Math.ceil(x0 / stepU) * stepU; x <= x1; x += stepU) { const p = toScreen(x, 0)[0]; ctx.moveTo(p, 0); ctx.lineTo(p, H); }
+    for (let y = Math.ceil(y0 / stepU) * stepU; y <= y1; y += stepU) { const p = toScreen(0, y)[1]; ctx.moveTo(0, p); ctx.lineTo(W, p); }
+    ctx.stroke();
+    // centre of mass marker
+    const c = toScreen(0, 0); ctx.strokeStyle = hexA(colors.muted, 0.5); ctx.beginPath();
+    ctx.moveTo(c[0] - 5, c[1]); ctx.lineTo(c[0] + 5, c[1]); ctx.moveTo(c[0], c[1] - 5); ctx.lineTo(c[0], c[1] + 5); ctx.stroke();
+
+    const showG = $("ghostOn").checked, showT = $("trailsOn").checked;
+    if (showT) {
+      for (let i = 0; i < 3; i++) {
+        if (showG) drawTrail(gtrails[i], colors.bodies[i], 0.35, 1, [3, 4]);
+        drawTrail(trails[i], colors.bodies[i], 0.9, 1.6);
+      }
+    }
+    for (let i = 0; i < 3; i++) {
+      const r = radius(sys.m[i]);
+      if (showG) {
+        const g = toScreen(ghost.s[4*i], ghost.s[4*i+1]);
+        ctx.strokeStyle = hexA(colors.bodies[i], 0.7); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(g[0], g[1], r + 3, 0, 7); ctx.stroke();
+      }
+      const p = toScreen(sys.s[4*i], sys.s[4*i+1]);
+      const glow = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 3.2);
+      glow.addColorStop(0, hexA(colors.bodies[i], 0.45)); glow.addColorStop(1, hexA(colors.bodies[i], 0));
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(p[0], p[1], r * 3.2, 0, 7); ctx.fill();
+      ctx.fillStyle = colors.bodies[i]; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7); ctx.fill();
+      // edge arrow when off screen
+      if (p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) {
+        const ang = Math.atan2(p[1] - H / 2, p[0] - W / 2);
+        const ex = Math.max(14, Math.min(W - 14, p[0])), ey = Math.max(14, Math.min(H - 14, p[1]));
+        ctx.save(); ctx.translate(ex, ey); ctx.rotate(ang); ctx.fillStyle = colors.bodies[i];
+        ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-6, -6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+    }
+  }
+
+  function drawChart() {
+    const w = chart.width / DPR, h = chart.height / DPR;
+    cctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    cctx.clearRect(0, 0, w, h);
+    const padL = 34, padR = 8, padT = 6, padB = 20;
+    const tMax = Math.max(20, Math.ceil((sys.t * 1.15) / 10) * 10);
+    const yMin = Math.min(-12, epsExp - 1), yMax = 2;
+    const X = t => padL + (t / tMax) * (w - padL - padR);
+    const Y = v => padT + (yMax - v) / (yMax - yMin) * (h - padT - padB);
+    cctx.font = "10px " + getComputedStyle(document.body).getPropertyValue("--mono");
+    cctx.fillStyle = colors.muted; cctx.strokeStyle = hexA(colors.muted, 0.18); cctx.lineWidth = 1;
+    cctx.textAlign = "right"; cctx.textBaseline = "middle";
+    for (let v = 0; v >= yMin; v -= 3) {
+      cctx.beginPath(); cctx.moveTo(padL, Y(v)); cctx.lineTo(w - padR, Y(v)); cctx.stroke();
+      cctx.fillText(v === 0 ? "1" : "1e" + v, padL - 4, Y(v));
+    }
+    cctx.textAlign = "center"; cctx.textBaseline = "top";
+    const tStep = tMax <= 40 ? 5 : tMax <= 100 ? 10 : tMax <= 300 ? 50 : 100;
+    for (let t = 0; t <= tMax; t += tStep) cctx.fillText(String(t), X(t), h - padB + 5);
+    // threshold
+    cctx.setLineDash([4, 4]); cctx.strokeStyle = hexA(colors.b3, 0.7);
+    cctx.beginPath(); cctx.moveTo(padL, Y(-1)); cctx.lineTo(w - padR, Y(-1)); cctx.stroke(); cctx.setLineDash([]);
+    // series
+    if (sepHist.length > 1) {
+      cctx.beginPath();
+      sepHist.forEach(([t, v], i) => { const x = X(t), y = Y(Math.max(yMin, Math.min(yMax, v))); i ? cctx.lineTo(x, y) : cctx.moveTo(x, y); });
+      const lastP = sepHist[sepHist.length - 1];
+      cctx.strokeStyle = colors.accent; cctx.lineWidth = 1.6; cctx.stroke();
+      cctx.lineTo(X(lastP[0]), Y(yMin)); cctx.lineTo(X(0), Y(yMin)); cctx.closePath();
+      cctx.fillStyle = hexA(colors.accent, 0.08); cctx.fill();
+      cctx.fillStyle = colors.accent; cctx.beginPath();
+      cctx.arc(X(lastP[0]), Y(Math.max(yMin, Math.min(yMax, lastP[1]))), 3, 0, 7); cctx.fill();
+    }
+    if (horizon !== null) {
+      cctx.strokeStyle = hexA(colors.b3, 0.9); cctx.beginPath(); cctx.moveTo(X(horizon), padT); cctx.lineTo(X(horizon), h - padB); cctx.stroke();
+    }
+  }
+
+  function updateReadouts() {
+    $("ovT").textContent = sys.t.toFixed(2);
+    const dE = Math.abs((sys.energy() - E0) / E0);
+    $("rE").textContent = dE < 1e-15 ? "< 1e-15" : dE.toExponential(1);
+    const d = gap();
+    $("rD").textContent = d.toExponential(1);
+    $("rA").textContent = "×" + fmtBig(d / Math.pow(10, epsExp));
+    $("rH").textContent = horizon === null ? "not yet" : "t ≈ " + horizon.toFixed(1);
+  }
+  function fmtBig(x) { return x < 1000 ? x.toFixed(x < 10 ? 1 : 0) : "10^" + Math.log10(x).toFixed(1); }
+
+  // ---------- controls ----------
+  const plist = $("presets");
+  PRESETS.forEach(p => {
+    const b = document.createElement("button");
+    b.className = "preset"; b.dataset.key = p.key; b.type = "button";
+    b.innerHTML = `<span>${p.name}</span><span class="tag ${p.tag[0]}">${p.tag[1]}</span>`;
+    b.addEventListener("click", () => { load(p); setRunning(true); });
+    plist.appendChild(b);
+  });
+  function setRunning(r) { running = r; $("play").textContent = r ? "Pause" : "Play"; }
+  $("play").addEventListener("click", () => setRunning(!running));
+  $("restart").addEventListener("click", () => { restart(true); setRunning(true); });
+  $("fit").addEventListener("click", () => {
+    const mn = Math.min(W, H); let R = 0.5; for (let i = 0; i < 3; i++) R = Math.max(R, Math.abs(sys.s[4*i]) * mn / W, Math.abs(sys.s[4*i+1]) * mn / H);
+    view.R = R * 1.25; view.cx = 0; view.cy = 0;
+  });
+  function showSpeed() { $("speedOut").textContent = "×" + +Math.pow(2, speedExp).toFixed(2) + " (time units/s)"; }
+  $("speed").addEventListener("input", e => { speedExp = +e.target.value; showSpeed(); });
+  function showEps() { $("epsOut").textContent = "10^" + epsExp; }
+  $("eps").addEventListener("input", e => { epsExp = +e.target.value; showEps(); restart(true); });
+  showEps();
+  document.addEventListener("keydown", e => {
+    if (e.code === "Space" && !/INPUT|SELECT|BUTTON|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); setRunning(!running); }
+  });
+
+  // pan / zoom
+  cv.addEventListener("wheel", e => { e.preventDefault(); view.R *= Math.exp(e.deltaY * 0.0015); }, { passive: false });
+  const pointers = new Map(); let pinch0 = null;
+  cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, [e.clientX, e.clientY]); });
+  cv.addEventListener("pointermove", e => {
+    if (!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId); pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pointers.size === 1) {
+      const k = scale(); view.cx -= (e.clientX - prev[0]) / k; view.cy += (e.clientY - prev[1]) / k;
+    } else if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (pinch0) view.R *= pinch0 / d; pinch0 = d;
+    }
+  });
+  const up = e => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch0 = null; };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+
+  // ---------- ensemble ----------
+  const BAR_LABELS = ["Mass A ejected", "Mass B ejected", "Mass C ejected", "Still bound"];
+  function renderBars(tally, total) {
+    const cols = ["var(--b1)", "var(--b2)", "var(--b3)", "var(--muted)"];
+    $("bars").innerHTML = tally.map((n, i) => {
+      const pct = total ? 100 * n / total : 0;
+      return `<div class="bar"><span>${BAR_LABELS[i]}</span><div class="track"><div class="fill" style="width:${pct}%;background:${cols[i]}"></div></div><span class="pct">${total ? pct.toFixed(0) + "%" : "—"}</span></div>`;
+    }).join("") + `<span class="hint">${total ? total + " encounters, each run up to t = 400. \"Still bound\" ones had not resolved by then." : "Results appear here. Default masses 1, 2, 3."}</span>`;
+  }
+  renderBars([0, 0, 0, 0], 0);
+
+  const workerSrc = `${ThreeBodyPhysics.toString()}
+    ThreeBodyPhysics(self);
+    self.onmessage = e => {
+      const { masses, runs } = e.data, T = self.ThreeBody, tally = [0,0,0,0];
+      for (let r = 0; r < runs; r++) {
+        const p = T.randomBound(Math.random, masses), s = new T.System(p.state, p.masses, { tol: 1e-8 });
+        let esc = -1, budget = 120000;
+        while (s.t < 400 && budget > 0) {
+          const before = s.attempts; s.advanceTo(s.t + 0.25, Math.min(budget, 50000));
+          budget -= s.attempts - before;
+          esc = T.escaped(s); if (esc >= 0) break;
+        }
+        tally[esc >= 0 ? esc : 3]++;
+        if (r % 5 === 4 || r === runs - 1) self.postMessage({ tally, done: r + 1 });
+      }
+    };`;
+  let worker = null;
+  $("ensRun").addEventListener("click", () => {
+    if (worker) worker.terminate();
+    const masses = ["m1", "m2", "m3"].map(id => Math.min(10, Math.max(0.1, +$(id).value || 1)));
+    const runs = +$("runs").value;
+    try { worker = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" }))); }
+    catch (err) { $("ensStatus").textContent = "This browser blocked the background thread, so the ensemble can't run here."; return; }
+    $("ensStatus").textContent = `Running ${runs} encounters with masses ${masses.join(", ")}…`;
+    $("ensRun").textContent = "Restart";
+    worker.onerror = e => { $("ensStatus").textContent = "The background thread failed: " + (e.message || "unknown error"); $("ensRun").textContent = "Run encounters"; };
+    worker.onmessage = e => {
+      const { tally, done } = e.data;
+      $("ensProg").style.width = (100 * done / runs) + "%";
+      renderBars(tally, done);
+      if (done < runs) $("ensStatus").textContent = `Running encounter ${done} of ${runs} with masses ${masses.join(", ")}…`;
+      if (done === runs) {
+        const light = masses.indexOf(Math.min(...masses));
+        const top = tally.slice(0, 3).indexOf(Math.max(...tally.slice(0, 3)));
+        $("ensStatus").textContent = top === light
+          ? `Done. The lightest body (${"ABC"[light]}) was ejected most often, as the statistical theories predict.`
+          : `Done. Mass ${"ABC"[top]} was ejected most often. With similar masses or few runs, random noise can beat the trend; try more encounters.`;
+        $("ensRun").textContent = "Run encounters";
+      }
+    };
+    $("ensProg").style.width = "0";
+    worker.postMessage({ masses, runs });
+  });
+
+  // ---------- go ----------
+  resize();
+  load(PRESETS[0]);
+  requestAnimationFrame(t => { last = t; frame(t); });
+})();
+</script>
