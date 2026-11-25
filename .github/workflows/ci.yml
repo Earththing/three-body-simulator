@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Physics tests
+        run: node test/physics.test.js
+      - name: index.html matches src/
+        run: |
+          ./build.sh
+          if ! git diff --quiet -- index.html; then
+            echo "::error file=index.html::index.html is out of date with src/. Run ./build.sh and commit the result."
+            exit 1
+          fi
