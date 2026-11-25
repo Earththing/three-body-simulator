@@ -110,6 +110,51 @@ Several results are also reproduced numerically by `test/physics.test.js`, which
 - Used for: the adaptive 5(4) integrator in `src/physics.js` (its coefficients and error estimate).
 - Status: Not checked. These are the standard published coefficients, and the integrator's results (below) confirm they're correct.
 
+## The novel and α Centauri
+
+Used by the *Three suns, one planet* and *Real α Centauri* setups and by [docs/three-body-novel.md](docs/three-body-novel.md).
+
+**Liu Cixin (2008).** 刘慈欣, *三体* (*The Three-Body Problem*). Serialized in *Science Fiction World* in 2006, published as a book in 2008. English translation by Ken Liu, Tor Books, 2014.
+- Used for: the setting. A planet with three suns in the α Centauri system, stable and chaotic eras, "flying stars", dehydration, and civilizations destroyed by chaotic eras.
+- Status: Partly checked. The details were confirmed against chapter summaries (below), not the text. The analysis describes the setting only in general terms and quotes nothing.
+
+**Chapter summaries used to check the novel's details:**
+- LitCharts: [ch. 7](https://www.litcharts.com/lit/the-three-body-problem/chapter-7-three-body-king-wen-of-zhou-and-the-long-night), [ch. 11](https://www.litcharts.com/lit/the-three-body-problem/chapter-11-three-body-mozi-and-the-fiery-flames), [ch. 15](https://www.litcharts.com/lit/the-three-body-problem/chapter-15-three-body-copernicus-universal-football-and-tri-solar-day), [ch. 19](https://www.litcharts.com/lit/the-three-body-problem/chapter-19-three-body-einstein-the-pendulum-monument-and-the-great-rip)
+- [GradeSaver, Part II summary](https://www.gradesaver.com/the-three-body-problem/study-guide/summary-part-ii-three-body-chapters-4-7)
+- Status: Checked for the meaning of "two flying stars" (a stable era is coming) and "three flying stars" (extreme cold), and for how stable and chaotic eras are described.
+
+**Pourbaix & Boffin (2016).** D. Pourbaix, H. M. J. Boffin, "Parallax and masses of α Centauri revisited," *Astronomy & Astrophysics* 586, A90.
+- Used for: masses of A and B (1.133 and 0.972 M☉), A–B orbital period (79.91 yr) and eccentricity (0.524). The simulator derives the semi-major axis (23.8 AU) from these with Kepler's third law. Commonly quoted values are around 23.3 AU; they differ because of the parallax used.
+- Status: Partly checked. The values were confirmed against sources citing the paper; the title and volume weren't.
+
+**Kervella, Thévenin & Lovis (2017).** P. Kervella, F. Thévenin, C. Lovis, "Proxima's orbit around α Centauri," *Astronomy & Astrophysics* 598, L7. doi:[10.1051/0004-6361/201629930](https://doi.org/10.1051/0004-6361/201629930). [arXiv:1611.03495](https://arxiv.org/abs/1611.03495)
+- Used for: Proxima is bound to A and B. Eccentricity 0.50, closest approach 4.3 thousand AU, currently near its farthest point at 13.0 thousand AU, period about 550,000 years. The simulator uses a semi-major axis of 8,700 AU, consistent with those (4.3 / (1 − 0.5) ≈ 8.6 thousand AU), and a mass of 0.122 M☉.
+- Status: Checked (orbit). The 8,700 AU figure is my inference from the published numbers.
+
+**Kervella et al. (2017), interferometry.** P. Kervella, L. Bigot, A. Gallenne, F. Thévenin, "The radii and limb darkenings of α Centauri A and B," *Astronomy & Astrophysics* 597, A137. [arXiv:1610.06185](https://arxiv.org/abs/1610.06185)
+- Used for: luminosities of A (1.52 L☉) and B (0.50 L☉) and radii (1.22 and 0.86 R☉). A's luminosity sets the planet's distance, 1.23 AU, where it gets Earth's sunlight.
+- Status: Partly checked. The values were confirmed against the arXiv listing; the author list and volume weren't.
+
+**Proxima's luminosity and brightness.** Bolometric luminosity 0.0016 L☉ (0.001567 ± 0.000020); apparent visual magnitude 11.1 at 1.30 parsecs.
+- Used for: Proxima's sunlight in the *Real α Centauri* setup, and the docs' estimate that Proxima would look like a magnitude-4.5 star from the planet (my calculation).
+- Status: Partly checked. The luminosity was confirmed by search; the magnitude and distance are standard values that weren't checked.
+
+**Quarles & Lissauer (2016).** B. Quarles, J. J. Lissauer, "Long-term stability of planets in the α Centauri system," *The Astronomical Journal* 151, 111. doi:[10.3847/0004-6256/151/5/111](https://doi.org/10.3847/0004-6256/151/5/111). [arXiv:1604.04917](https://arxiv.org/abs/1604.04917)
+- Used for: Earth-like planets around α Cen A or B can stay stable for billions of years inside roughly 2 AU. Supports the *Real α Centauri* result.
+- Status: Checked (paper). The 2 AU figure comes from a [press summary](https://phys.org/news/2016-05-planets-alpha-centauri.html), not the paper's tables.
+
+**Holman & Wiegert (1999).** M. J. Holman, P. A. Wiegert, "Long-term stability of planets in binary systems," *The Astronomical Journal* 117, 621.
+- Used for: planets orbiting a binary from outside are stable only beyond roughly 2–4 times the binary's separation, depending on its eccentricity. The simulator's "stable around a pair" rule uses 2.5 times.
+- Status: Not checked.
+
+**Main-sequence approximations.** Luminosity ∝ M⁴ and radius ≈ M^0.8 R☉, for the invented suns only.
+- Used for: sunlight and collision radii in *Three suns, one planet*. These are rough textbook scalings for stars near a solar mass; the results don't depend on them closely.
+- Status: Not checked.
+
+**Inverse, "What is the three-body problem in physics?"** ([link](https://www.inverse.com/science/what-is-the-three-body-problem-in-physics-space-science))
+- Used for: background on how researchers view the novel's physics, including that a stable configuration of three comparable stars would have to be infinitely fine-tuned.
+- Status: Secondary source.
+
 ## News and secondary sources consulted
 
 These shaped the summary of what has and hasn't been solved. They're secondary sources; the papers above are the primary ones.
@@ -137,6 +182,7 @@ These shaped the summary of what has and hasn't been solved. They're secondary s
 | Lagrange triangle closes after one rotation | Lagrange 1772 | within 10⁻¹⁰ |
 | Euler line closes after one rotation | Euler 1767 | within 10⁻¹⁰ |
 | Pythagorean problem ejects the lightest body | Szebehely & Peters 1967 | mass 3 escapes, detected at t ≈ 60.5; energy conserved to ~10⁻⁸ |
+| A planet near α Cen A stays stable | Quarles & Lissauer 2016 | one stable era for 200 years at 1.23 AU, sunlight within 1% |
 
 Two more were checked by hand and aren't in the test suite:
 

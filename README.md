@@ -16,6 +16,8 @@ An interactive gravity simulator that shows what the three-body problem is, why 
 
 All of this is in the page, along with the sources listed in [REFERENCES.md](REFERENCES.md).
 
+**About the novel:** [docs/three-body-novel.md](docs/three-body-novel.md) checks the three suns of Liu Cixin's *The Three-Body Problem* against the physics. The book's stable and chaotic eras are realistic, but a planet in such a system lasts a median of 13.5 years, and the real α Centauri the book names would give one stable era that never ends.
+
 ## How to use it
 
 ### The simulator
@@ -24,11 +26,11 @@ Pick a configuration on the right. Every run starts a **shadow copy**, drawn as 
 
 | Control | What it does |
 |---|---|
-| Configurations | Load one of nine starting setups (below). |
+| Configurations | Load one of eleven starting setups (below). |
 | Play / Pause, Space | Pause or resume. |
 | Restart | Rerun the current setup from t = 0. Random start keeps its current draw; click *Random start* again for a new one. |
 | Fit view | Zoom to fit all three bodies. Bodies outside the view are marked with an arrow at the edge. |
-| Speed | Simulated time units per second, ×0.25 to ×32. |
+| Speed | Simulated time per second: ×0.25 to ×128 time units, or years per second for the two planet setups. |
 | Shadow offset | Size of the shadow's starting offset, 10⁻¹ to 10⁻¹². Changing it restarts the run. |
 | Drag, scroll, pinch | Pan and zoom the view. |
 
@@ -39,6 +41,15 @@ Pick a configuration on the right. Every run starts a **shadow copy**, drawn as 
 - **Amplified:** shadow gap divided by the starting offset.
 - **Prediction horizon:** the time when the gap first passed 0.1, about where a forecast stops meaning anything.
 - **Chart:** log₁₀ of the gap over time. A straight rising line means exponential divergence (chaos); a flat or slowly rising one means the orbit is stable. Spikes are close passes, where small timing differences briefly look large.
+
+**Planet panel** (only for *Three suns, one planet* and *Real α Centauri*)
+
+- **Era:** *stable* (orbiting one sun, the others far away), *stable around a pair* (orbiting two suns together), *chaotic*, *ejected* or *fell into a sun*.
+- **Sunlight:** starlight on the planet in units of what Earth gets from the Sun.
+- **Era band:** each era coloured by the sun the planet orbits. Hatched means chaotic; two colours mean orbiting a pair.
+- **Sunlight line:** sunlight over time, log scale. The shaded band is 0.5–1.5 times Earth's.
+
+The exact rules are in [docs/three-body-novel.md](docs/three-body-novel.md#method).
 
 ### The configurations
 
@@ -53,13 +64,16 @@ Pick a configuration on the right. Every run starts a **shadow copy**, drawn as 
 | Euler line | Exact, unstable | Three equal masses on a rotating line. It breaks up within about one rotation. |
 | Star, planet, moon | Near-Keplerian | A hierarchical triple: nearly two separate two-body orbits plus small corrections, the regime where classical perturbation theory works. |
 | Random start | Chaotic | Equal masses at random positions with negative total energy. Click again for a new draw. |
+| Three suns, one planet | Chaotic | The novel's setup: suns of 1.0, 0.9 and 0.8 M☉ a few AU apart and an Earth-mass planet. Five stable eras of about 10 years, around Sun 1 then Sun 2, with chaotic eras between, then ejection at about 67 years. It's the best of 400 random systems; the median planet lasts 13.5 years. Lengths in AU, time in years. |
+| Real α Centauri | Hierarchical | A and B with their measured masses and 80-year orbit, Proxima 13,000 AU away (the arrow at the edge), and an Earth-like planet 1.23 AU from A. One stable era indefinitely, with sunlight within 1% of Earth's. The view follows the A–B pair; click *Fit view* to see Proxima's distance. |
 
 ### Things to try
 
 1. **Pythagorean, offset 10⁻³ vs 10⁻¹²:** nine more digits of precision push the prediction horizon out only a little. This is the main point of the page.
 2. **Figure-eight vs Lagrange triangle:** both are exact periodic solutions. Compare their gap charts.
 3. **Lagrange triangle vs Trojan triangle:** the same exact solution. Only the mass ratio decides whether it survives.
-4. **"Who gets thrown out?" panel:** run 300 encounters with masses 1, 2, 3. The lightest body is ejected about 65–75% of the time. Then try 1, 1, 1 and 1, 1, 5.
+4. **Three suns, one planet vs Real α Centauri:** the novel's kind of system against the one it names. Watch the era band and the sunlight line.
+5. **"Who gets thrown out?" panel:** run 300 encounters with masses 1, 2, 3. The lightest body is ejected about 65–75% of the time. Then try 1, 1, 1 and 1, 1, 5.
 
 ### The ensemble panel
 
@@ -80,6 +94,8 @@ This tallies outcomes for the starting conditions described below. It doesn't re
 - **Integrator:** adaptive Dormand–Prince 5(4) (the method behind MATLAB's `ode45` and SciPy's `RK45`), with relative tolerance 10⁻¹¹ (10⁻⁸ in the ensemble).
 - **Close passes:** there's no softening. The step size shrinks during close passes instead of the force being smoothed, so energy stays conserved to about 10⁻⁸ through the Pythagorean problem's close encounters.
 - **Shadow copy:** a second, independent system offset by 10⁻ⁿ in body 1's x-coordinate and advanced to exactly the same times.
+- **Frame-independent runs:** the integrator takes its own adaptive steps and the display interpolates between them (cubic Hermite in position). A run is identical at any frame rate or speed setting, and matches `tools/novel-survey.js` step for step.
+- **Collisions:** only the two planet setups give bodies a radius. Bodies that touch merge into the heavier one, conserving mass and momentum, and the energy-drift readout is re-based.
 - **Ensemble starting conditions:** positions uniform in the unit disk, random velocities rescaled so kinetic energy = 0.3 × |potential energy| (bound), shifted to the centre-of-mass frame. No angular-momentum constraint.
 
 ### Limitations
@@ -88,6 +104,7 @@ This tallies outcomes for the starting conditions described below. It doesn't re
 - Butterfly I and Moth I use the 5-digit starting values from the 2013 paper. Their small closure errors are real and expected. Li (2013) made the same point about that paper's starting values (see REFERENCES.md).
 - The ensemble's starting distribution was chosen for the demo, not taken from a specific paper. Its percentages depend on that choice.
 - Physics tests check known results; the UI has no automated tests.
+- The planet setups use rough main-sequence relations (luminosity ∝ M⁴, radius ∝ M^0.8) for the invented suns, and judgement-call thresholds for what counts as a stable era. See [docs/three-body-novel.md](docs/three-body-novel.md#method).
 
 ## Running locally
 
@@ -108,7 +125,9 @@ node test/physics.test.js
 | `src/physics.js` | Integrator, initial conditions for each configuration, escape detection. Usable from Node or the browser. |
 | `src/page.html` | Page, canvas rendering, controls, ensemble worker. |
 | `build.sh` | Inlines the physics into the page, producing `index.html` (committed) and `dist/fragment.html` (ignored; a copy without the `<html>` wrapper). |
-| `test/physics.test.js` | Checks that the figure-eight, Lagrange and Euler solutions close after one period, that energy is conserved, and that the Pythagorean problem ejects the mass-3 body. |
+| `test/physics.test.js` | Checks that the figure-eight, Lagrange and Euler solutions close after one period, that energy is conserved, that the Pythagorean problem ejects the mass-3 body, that mergers conserve momentum, that runs don't depend on display timing, and that a planet at α Cen A stays stable for 200 years. |
+| `tools/novel-survey.js` | The 400-system planet survey behind [docs/three-body-novel.md](docs/three-body-novel.md). `node tools/novel-survey.js [runs] [seed] [years]`; a few minutes. |
+| `docs/` | Screenshots and the novel analysis. |
 | `.github/workflows/` | `ci.yml` runs the tests and checks that `index.html` matches `src/`. `pages.yml` deploys `index.html` to GitHub Pages on every push to `main`. |
 
 ## Sources

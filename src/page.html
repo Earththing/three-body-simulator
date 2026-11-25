@@ -15,6 +15,7 @@
   --b1: #f2b544;
   --b2: #6cc4e2;
   --b3: #ec7d88;
+  --b4: #9fe0bd;
   --sky: #070a15;
   --grid: rgba(140,160,210,0.07);
   --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
@@ -25,13 +26,13 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --bg: #eef0f6; --panel: #ffffff; --line: #d3d8e6; --fg: #141a2d; --muted: #586181;
-    --accent: #a8650c; --b1: #c47f0e; --b2: #1f87ad; --b3: #c2404f; --sky: #fbfbfd;
+    --accent: #a8650c; --b1: #c47f0e; --b2: #1f87ad; --b3: #c2404f; --b4: #1e8a5c; --sky: #fbfbfd;
     --grid: rgba(40,60,110,0.07); color-scheme: light;
   }
 }
 :root[data-theme="light"] {
   --bg: #eef0f6; --panel: #ffffff; --line: #d3d8e6; --fg: #141a2d; --muted: #586181;
-  --accent: #a8650c; --b1: #c47f0e; --b2: #1f87ad; --b3: #c2404f; --sky: #fbfbfd;
+  --accent: #a8650c; --b1: #c47f0e; --b2: #1f87ad; --b3: #c2404f; --b4: #1e8a5c; --sky: #fbfbfd;
   --grid: rgba(40,60,110,0.07); color-scheme: light;
 }
 
@@ -80,6 +81,13 @@ header .eq { font-family: var(--mono); color: var(--accent); font-size: 0.85rem;
 .chartbox { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 6px; }
 .chartbox .head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
 .chartbox canvas { width: 100%; height: 150px; display: block; }
+
+.planetbox { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 8px; }
+.planetbox .head { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.chip { font: 500 0.78rem/1 var(--mono); padding: 5px 8px; border-radius: 5px; border: 1px solid currentColor; white-space: nowrap; }
+.pstats { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 0.86rem; color: var(--muted); }
+.pstats b { color: var(--fg); font: 500 0.92rem var(--mono); font-variant-numeric: tabular-nums; }
+.planetbox canvas { width: 100%; height: 110px; display: block; }
 
 /* ---------- panel ---------- */
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 16px; }
@@ -177,6 +185,19 @@ footer a { color: inherit; }
         <div class="readout"><span class="eyebrow">Amplified</span><span class="v" id="rA">—</span></div>
         <div class="readout"><span class="eyebrow">Prediction horizon</span><span class="v" id="rH">—</span></div>
       </div>
+      <div class="planetbox" id="planetBox" hidden>
+        <div class="head">
+          <span class="eyebrow">Planet</span>
+          <span class="chip" id="eraChip">Stable era</span>
+        </div>
+        <div class="pstats">
+          <span>Sunlight <b id="pSun">1.00</b> × Earth's</span>
+          <span>Stable eras <b id="pStable">0</b></span>
+          <span>Chaotic eras <b id="pChaotic">0</b></span>
+        </div>
+        <canvas id="eraCanvas" aria-label="Era timeline and sunlight on the planet"></canvas>
+        <span class="hint">Top band: the planet's era, coloured by the sun it orbits (two colours: orbiting a pair); hatched means chaotic. Line: sunlight on the planet, log scale. The shaded band is 0.5–1.5 times Earth's.</span>
+      </div>
       <div class="chartbox">
         <div class="head">
           <span class="eyebrow">Gap between original and shadow · log₁₀ phase-space distance</span>
@@ -199,7 +220,7 @@ footer a { color: inherit; }
         </div>
         <div class="slider">
           <label for="speed">Speed</label><output id="speedOut"></output>
-          <input type="range" id="speed" min="-2" max="5" step="0.25" value="0">
+          <input type="range" id="speed" min="-2" max="7" step="0.25" value="0">
         </div>
         <div class="slider">
           <label for="eps">Shadow offset</label><output id="epsOut"></output>
@@ -262,6 +283,14 @@ footer a { color: inherit; }
     <div class="bars" id="bars"></div>
   </section>
 
+  <section class="prose" aria-label="The novel">
+    <span class="eyebrow">Fiction check</span>
+    <h2>The novel's three suns</h2>
+    <p>Liu Cixin's <i>The Three-Body Problem</i> puts its aliens on a planet with three suns. The book describes them only as the inhabitants experience them: stable eras when the planet circles one sun, chaotic eras of scorching heat or deep cold, and "flying stars", suns so distant they look like stars. Two flying stars mean a stable era is coming; three mean bitter cold. There are no masses, distances or periods, so the orbits can't be reconstructed. They can be tested for consistency, though.</p>
+    <p><strong>The eras are good physics.</strong> A planet orbiting one sun while the other two are far away is exactly the condition this simulator uses to call an era stable. Load <em>Three suns, one planet</em> to watch eras come and go.</p>
+    <p><strong>How long it lasts is not.</strong> In 400 random systems like that one, the planet was thrown out or fell into a sun after a median of 13 years. Most lost planets had one stable era or none; only 13 of 313 had three or more. The novel has civilization after civilization. Planets that did last mostly did so because the suns stopped being chaotic. And the real α Centauri the book names is the opposite case: a tight pair with a distant third star. A planet there would have one stable era that never ends. Load <em>Real α Centauri</em> to compare. The full analysis is in the <a href="https://github.com/Earththing/three-body-simulator/blob/main/docs/three-body-novel.md">project documentation</a>.</p>
+  </section>
+
   <footer>
     Integrator: adaptive Dormand–Prince 5(4), relative tolerance 10⁻¹¹, no softening. Close encounters are resolved by shrinking the step, not by smoothing the force. Units: G = 1, motion in the plane.
     Figure-eight initial conditions from Chenciner &amp; Montgomery (2000). Butterfly and moth from Šuvakov &amp; Dmitrašinović, <i>Phys. Rev. Lett.</i> 110, 114301 (2013).
@@ -305,6 +334,14 @@ footer a { color: inherit; }
     { key: "random", name: "Random start", tag: ["chaos", "Chaotic"], R: 2.2, speed: 1,
       title: "Random bound start",
       text: "Three equal masses at random positions with total energy below zero. Almost every such start is chaotic and ends with one body ejected. Click again for a new start." },
+    { key: "threeSuns", name: "Three suns, one planet", tag: ["chaos", "Chaotic"], R: 13, speed: 5, years: true,
+      planet: 3, stars: [0, 1, 2], lum: [1, 0.656, 0.41], names: ["Sun 1", "Sun 2", "Sun 3", "Planet"],
+      title: "Three comparable suns and a planet",
+      text: "The setup of Liu Cixin's novel <i>The Three-Body Problem</i>: suns of 1.0, 0.9 and 0.8 solar masses a few AU apart, and an Earth-mass planet starting 1 AU from Sun 1. It alternates between stable eras, orbiting one sun while the other two are far off, and chaotic eras, when another sun comes close. Sunlight swings from 0.002 to 77 times Earth's. In this run it gets 5 stable eras, moving from Sun 1 to Sun 2, before it is thrown out at about 67 years. That is the best of 400 random starts: the median planet lasted 13 years, and most had one stable era or none. Lengths in AU, time in years." },
+    { key: "alphaCentauri", name: "Real α Centauri", tag: ["approx", "Hierarchical"], R: 22, speed: 6, years: true, follow: [0, 1],
+      planet: 3, stars: [0, 1, 2], lum: [1.52, 0.50, 0.0016], names: ["α Cen A", "α Cen B", "Proxima", "Planet"],
+      title: "The real α Centauri, with an Earth-like planet",
+      text: "The system the novel names. A (1.13 M☉) and B (0.97 M☉) orbit each other every 80 years, 11 to 36 AU apart. Proxima (0.12 M☉) is about 13,000 AU away, off screen (the arrow), and takes about 550,000 years per orbit. A planet 1.23 AU from A, where it gets Earth's sunlight, stays in one stable era indefinitely, and its sunlight changes by about 1%. Click Fit view to see how far away Proxima is." },
   ];
 
   // ---------- DOM ----------
@@ -313,18 +350,30 @@ footer a { color: inherit; }
   let colors = {};
   function readColors() {
     const cs = getComputedStyle(document.documentElement);
-    ["bg","panel","line","fg","muted","accent","b1","b2","b3","sky","grid"].forEach(k => colors[k] = cs.getPropertyValue("--" + k).trim());
-    colors.bodies = [colors.b1, colors.b2, colors.b3];
+    ["bg","panel","line","fg","muted","accent","b1","b2","b3","b4","sky","grid"].forEach(k => colors[k] = cs.getPropertyValue("--" + k).trim());
+    colors.bodies = [colors.b1, colors.b2, colors.b3, colors.b4];
   }
   readColors();
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
   new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   // ---------- state ----------
-  let preset = PRESETS[0], sys, ghost, trails, gtrails, sepHist, horizon, E0;
+  let preset = PRESETS[0], sys, ghost, trails, gtrails, sepHist, horizon, E0, eras, sunHist;
+  let simT = 0, vs, vg, gridBuf, nextGrid = 0, seenEvents = 0;   // display time, interpolated states of original and shadow
+  const GRID = 0.25;
   let running = true, epsExp = -6, speedExp = 0;
-  const view = { R: 4, cx: 0, cy: 0 };
+  const view = { R: 4, cx: 0, cy: 0, ox: 0, oy: 0 };   // ox, oy: the viewer's pan away from the followed point
+  // The point the camera follows: the centre of mass of preset.follow bodies (e.g. α Cen A and B), else the origin.
+  function followPoint() {
+    const f = preset.follow; if (!f) return [0, 0];
+    let M = 0, x = 0, y = 0;
+    for (const i of f) { M += sys.m[i]; x += sys.m[i] * vs[4*i]; y += sys.m[i] * vs[4*i+1]; }
+    return [x / M, y / M];
+  }
   const TRAIL_MAX = 2400;
+  const ERA_HOLD = 3;                       // time units a new state must last before it counts as a new era
+  const tScale = () => preset.years ? 1 / (2 * Math.PI) : 1;   // G = 1 with AU and M☉ makes 2π time units one year
+  const tUnit = () => preset.years ? " yr" : "";
 
   function hexA(c, a) {
     if (c.startsWith("#")) {
@@ -340,39 +389,59 @@ footer a { color: inherit; }
     p._init = init;
     restart(keepView);
     document.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", b.dataset.key === p.key));
-    $("about").innerHTML = `<h3>${p.title}</h3><p>${p.text}</p><p class="mono" style="font-size:0.78rem">masses ${init.masses.map(fmtM).join(" · ")}</p>`;
+    $("about").innerHTML = `<h3>${p.title}</h3><p>${p.text}</p><p class="mono" style="font-size:0.78rem">masses${p.years ? " (M☉)" : ""} ${init.masses.map(fmtM).join(" · ")}</p>`;
     $("ovName").textContent = p.name;
-    $("legend").innerHTML = init.masses.map((m, i) => `<span><i style="background:var(--b${i + 1})"></i>m = ${fmtM(m)}</span>`).join("") +
+    $("legend").innerHTML = init.masses.map((m, i) => `<span><i style="background:var(--b${i + 1})"></i>${p.names ? p.names[i] : "m = " + fmtM(m)}</span>`).join("") +
       `<span><i class="ghost"></i>shadow</span>`;
+    $("planetBox").hidden = p.planet === undefined;
     speedExp = p.speed; $("speed").value = speedExp; showSpeed();
   }
   function fmtM(m) { return m >= 0.01 ? String(+m.toFixed(3)) : m.toExponential(0); }
 
   function restart(keepView) {
-    const init = preset._init;
-    sys = new T.System(init.state, init.masses);
-    ghost = new T.System(init.state, init.masses);
-    ghost.s[0] += Math.pow(10, epsExp);
-    E0 = sys.energy();
-    trails = [[], [], []]; gtrails = [[], [], []];
+    const init = preset._init, opts = { radii: init.radii };
+    sys = new T.System(init.state, init.masses, opts);
+    const g0 = Float64Array.from(init.state); g0[0] += Math.pow(10, epsExp);
+    ghost = new T.System(g0, init.masses, opts);
+    E0 = sys.energy(); seenEvents = 0;
+    simT = 0; vs = Float64Array.from(sys.s); vg = Float64Array.from(ghost.s); gridBuf = new Float64Array(sys.s.length);
+    const n = init.masses.length;
+    trails = Array.from({ length: n }, () => []); gtrails = Array.from({ length: n }, () => []);
     sepHist = [[0, epsExp]]; horizon = null;
-    if (!keepView) { view.R = preset.R; view.cx = 0; view.cy = 0; }
+    eras = preset.planet !== undefined ? new T.EraTracker(ERA_HOLD) : null;
+    sunHist = []; nextGrid = GRID;
+    if (eras) trackPlanetAt(0);
+    if (!keepView) { view.R = preset.R; view.ox = 0; view.oy = 0; }
     pushTrail();
   }
 
   function pushTrail() {
-    for (let i = 0; i < 3; i++) {
-      trails[i].push(sys.s[4*i], sys.s[4*i+1]);
-      gtrails[i].push(ghost.s[4*i], ghost.s[4*i+1]);
+    for (let i = 0; i < trails.length; i++) {
+      trails[i].push(vs[4*i], vs[4*i+1]);
+      gtrails[i].push(vg[4*i], vg[4*i+1]);
       if (trails[i].length > TRAIL_MAX * 2) { trails[i].splice(0, 2); gtrails[i].splice(0, 2); }
     }
   }
   function gap() {
-    let d = 0; for (let q = 0; q < 12; q++) d += (sys.s[q] - ghost.s[q]) ** 2;
+    let d = 0; for (let q = 0; q < vs.length; q++) d += (vs[q] - vg[q]) ** 2;
     return Math.sqrt(d);
   }
 
+  // ---------- planet among several suns ----------
+  // Status is sampled on a fixed grid of times (the same grid the statistics in the docs used), from the
+  // interpolated state, so the eras you see don't depend on frame rate.
+  function trackPlanetAt(t) {
+    const p = preset.planet, cur = eras.current();
+    if (cur && (cur.state === "ejected" || cur.state === "collided")) { eras.update(t, cur); return; }
+    sys.stateAt(t, gridBuf);
+    const pv = { s: gridBuf, m: sys.m, alive: sys.alive, mergedInto: sys.mergedInto };
+    eras.update(t, T.planetStatus(pv, p, preset.stars));
+    if (sys.alive[p]) sunHist.push([t, T.sunlight(pv, p, preset.stars, preset.lum)]);
+  }
+
   // ---------- stepping ----------
+  // The integrator takes its own adaptive steps (advancePast) and the display interpolates between them (stateAt),
+  // so a run is the same at any frame rate or speed setting.
   let last = performance.now();
   function frame(now) {
     const dtReal = Math.min(0.05, (now - last) / 1000); last = now;
@@ -381,19 +450,24 @@ footer a { color: inherit; }
       const n = Math.max(1, Math.min(40, Math.ceil(dt / 0.01)));
       const t0 = performance.now();
       for (let k = 0; k < n; k++) {
-        const target = sys.t + dt / n;
-        sys.advanceTo(target, 20000);
-        ghost.advanceTo(sys.t, 20000);
+        const target = simT + dt / n;
+        if (eras) while (nextGrid <= target && sys.advancePast(nextGrid, 20000)) { trackPlanetAt(nextGrid); nextGrid += GRID; }
+        const ok = sys.advancePast(target, 20000) && ghost.advancePast(target, 20000);
+        simT = ok ? target : Math.max(simT, Math.min(sys.t, ghost.t));
+        sys.stateAt(simT, vs); ghost.stateAt(simT, vg);
+        // A merger (planet into a sun) changes the energy on purpose; re-base the drift check.
+        if (sys.events.length !== seenEvents) { seenEvents = sys.events.length; E0 = sys.energy(); }
         pushTrail();
         const d = gap();
         const lg = Math.log10(Math.max(d, 1e-16));
         const lastH = sepHist[sepHist.length - 1];
-        if (sys.t - lastH[0] > 0.02) sepHist.push([sys.t, lg]);
-        if (horizon === null && d > 0.1) horizon = sys.t;
-        if (performance.now() - t0 > 14) break; // keep the UI responsive during close encounters
+        if (simT - lastH[0] > 0.02) sepHist.push([simT, lg]);
+        if (horizon === null && d > 0.1) horizon = simT;
+        if (!ok || performance.now() - t0 > 14) break; // keep the UI responsive during close encounters
       }
     }
     draw(); drawChart(); updateReadouts();
+    if (eras) drawEras();
     requestAnimationFrame(frame);
   }
 
@@ -405,9 +479,13 @@ footer a { color: inherit; }
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
     const c = chart.getBoundingClientRect();
     chart.width = Math.round(c.width * DPR); chart.height = Math.round(c.height * DPR);
+    const e = eraCv.getBoundingClientRect();
+    eraCv.width = Math.round(e.width * DPR); eraCv.height = Math.round(e.height * DPR);
   }
+  const eraCv = $("eraCanvas"), ectx = eraCv.getContext("2d");
   new ResizeObserver(resize).observe($("sky"));
   new ResizeObserver(resize).observe(chart);
+  new ResizeObserver(resize).observe(eraCv);
 
   function scale() { return Math.min(W, H) / (2 * view.R); }
   function toScreen(x, y) { const k = scale(); return [W / 2 + (x - view.cx) * k, H / 2 - (y - view.cy) * k]; }
@@ -428,9 +506,13 @@ footer a { color: inherit; }
     ctx.setLineDash([]);
   }
 
-  function radius(m) { return Math.max(3, 7 * Math.cbrt(m / Math.max(...sys.m))); }
+  function radius(m) {
+    const rel = m / Math.max(...sys.m);
+    return rel < 1e-5 ? 2.5 : Math.max(3, 7 * Math.cbrt(rel));   // planets get a fixed small dot
+  }
 
   function draw() {
+    const fp = followPoint(); view.cx = fp[0] + view.ox; view.cy = fp[1] + view.oy;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.fillStyle = colors.sky; ctx.fillRect(0, 0, W, H);
     // grid, one line per unit length
@@ -446,19 +528,20 @@ footer a { color: inherit; }
 
     const showG = $("ghostOn").checked, showT = $("trailsOn").checked;
     if (showT) {
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < trails.length; i++) {
         if (showG) drawTrail(gtrails[i], colors.bodies[i], 0.35, 1, [3, 4]);
         drawTrail(trails[i], colors.bodies[i], 0.9, 1.6);
       }
     }
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < trails.length; i++) {
+      if (!sys.alive[i]) continue;
       const r = radius(sys.m[i]);
-      if (showG) {
-        const g = toScreen(ghost.s[4*i], ghost.s[4*i+1]);
+      if (showG && ghost.alive[i]) {
+        const g = toScreen(vg[4*i], vg[4*i+1]);
         ctx.strokeStyle = hexA(colors.bodies[i], 0.7); ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(g[0], g[1], r + 3, 0, 7); ctx.stroke();
       }
-      const p = toScreen(sys.s[4*i], sys.s[4*i+1]);
+      const p = toScreen(vs[4*i], vs[4*i+1]);
       const glow = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 3.2);
       glow.addColorStop(0, hexA(colors.bodies[i], 0.45)); glow.addColorStop(1, hexA(colors.bodies[i], 0));
       ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(p[0], p[1], r * 3.2, 0, 7); ctx.fill();
@@ -466,7 +549,7 @@ footer a { color: inherit; }
       // edge arrow when off screen
       if (p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) {
         const ang = Math.atan2(p[1] - H / 2, p[0] - W / 2);
-        const ex = Math.max(14, Math.min(W - 14, p[0])), ey = Math.max(14, Math.min(H - 14, p[1]));
+        const ex = Math.max(14, Math.min(W - 14, p[0])), ey = Math.max(34, Math.min(H - 34, p[1]));   // clear of the labels
         ctx.save(); ctx.translate(ex, ey); ctx.rotate(ang); ctx.fillStyle = colors.bodies[i];
         ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-6, -6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill(); ctx.restore();
       }
@@ -478,9 +561,9 @@ footer a { color: inherit; }
     cctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     cctx.clearRect(0, 0, w, h);
     const padL = 34, padR = 8, padT = 6, padB = 20;
-    const tMax = Math.max(20, Math.ceil((sys.t * 1.15) / 10) * 10);
+    const tMax = axisMax();
     const yMin = Math.min(-12, epsExp - 1), yMax = 2;
-    const X = t => padL + (t / tMax) * (w - padL - padR);
+    const X = t => padL + (t * tScale() / tMax) * (w - padL - padR);
     const Y = v => padT + (yMax - v) / (yMax - yMin) * (h - padT - padB);
     cctx.font = "10px " + getComputedStyle(document.body).getPropertyValue("--mono");
     cctx.fillStyle = colors.muted; cctx.strokeStyle = hexA(colors.muted, 0.18); cctx.lineWidth = 1;
@@ -490,8 +573,7 @@ footer a { color: inherit; }
       cctx.fillText(v === 0 ? "1" : "1e" + v, padL - 4, Y(v));
     }
     cctx.textAlign = "center"; cctx.textBaseline = "top";
-    const tStep = tMax <= 40 ? 5 : tMax <= 100 ? 10 : tMax <= 300 ? 50 : 100;
-    for (let t = 0; t <= tMax; t += tStep) cctx.fillText(String(t), X(t), h - padB + 5);
+    for (let t = 0; t <= tMax; t += tickStep(tMax)) cctx.fillText(String(t), X(t / tScale()), h - padB + 5);
     // threshold
     cctx.setLineDash([4, 4]); cctx.strokeStyle = hexA(colors.b3, 0.7);
     cctx.beginPath(); cctx.moveTo(padL, Y(-1)); cctx.lineTo(w - padR, Y(-1)); cctx.stroke(); cctx.setLineDash([]);
@@ -511,14 +593,71 @@ footer a { color: inherit; }
     }
   }
 
+  // Shared time axis (display units) for the gap chart and the era strip.
+  function axisMax() { return Math.max(20, Math.ceil((simT * tScale() * 1.15) / 10) * 10); }
+  function tickStep(tMax) { return tMax <= 40 ? 5 : tMax <= 100 ? 10 : tMax <= 300 ? 50 : 100; }
+
+  function drawEras() {
+    const w = eraCv.width / DPR, h = eraCv.height / DPR, c = ectx;
+    c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, w, h);
+    const padL = 34, padR = 8, bandH = 14, top = bandH + 8, padB = 18;
+    const tMax = axisMax(), X = t => padL + (t * tScale() / tMax) * (w - padL - padR);
+    const lo = -2.5, hi = 2.5, Y = v => top + (hi - Math.max(lo, Math.min(hi, v))) / (hi - lo) * (h - top - padB);
+    c.font = "10px " + getComputedStyle(document.body).getPropertyValue("--mono");
+    // era band
+    eras.eras.forEach(e => {
+      const x0 = X(e.t0), x1 = Math.max(X(e.t1), x0 + 1);
+      if (e.state === "stable") { c.fillStyle = colors.bodies[e.host]; c.fillRect(x0, 0, x1 - x0, bandH); }
+      else if (e.state === "circumbinary") {
+        c.fillStyle = colors.bodies[e.host]; c.fillRect(x0, 0, x1 - x0, bandH / 2);
+        c.fillStyle = colors.bodies[e.host2]; c.fillRect(x0, bandH / 2, x1 - x0, bandH / 2);
+      }
+      else if (e.state === "chaotic") {
+        c.save(); c.beginPath(); c.rect(x0, 0, x1 - x0, bandH); c.clip();
+        c.strokeStyle = hexA(colors.fg, 0.45); c.lineWidth = 1;
+        for (let x = x0 - bandH; x < x1; x += 4) { c.beginPath(); c.moveTo(x, bandH); c.lineTo(x + bandH, 0); c.stroke(); }
+        c.restore();
+      } else { c.fillStyle = hexA(colors.muted, 0.35); c.fillRect(x0, 0, x1 - x0, bandH); }
+    });
+    // sunlight axis and Earth band
+    c.fillStyle = hexA(colors.b4, 0.12); c.fillRect(padL, Y(Math.log10(1.5)), w - padL - padR, Y(Math.log10(0.5)) - Y(Math.log10(1.5)));
+    c.strokeStyle = hexA(colors.muted, 0.18); c.fillStyle = colors.muted; c.textAlign = "right"; c.textBaseline = "middle";
+    [[-2, "0.01"], [0, "1"], [2, "100"]].forEach(([v, lab]) => {
+      c.beginPath(); c.moveTo(padL, Y(v)); c.lineTo(w - padR, Y(v)); c.stroke(); c.fillText(lab, padL - 4, Y(v));
+    });
+    c.textAlign = "center"; c.textBaseline = "top";
+    for (let t = 0; t <= tMax; t += tickStep(tMax)) c.fillText(String(t), X(t / tScale()), h - padB + 5);
+    if (sunHist.length > 1) {
+      c.beginPath();
+      sunHist.forEach(([t, S], i) => { const x = X(t), y = Y(Math.log10(Math.max(S, 1e-6))); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+      c.strokeStyle = colors.b4; c.lineWidth = 1.3; c.stroke();
+    }
+  }
+
+  function updatePlanet() {
+    const cur = eras.current(), names = preset.names, p = preset.planet, chip = $("eraChip");
+    let text, col;
+    if (cur.state === "stable") { text = `Stable era · orbiting ${names[cur.host]}`; col = colors.bodies[cur.host]; }
+    else if (cur.state === "circumbinary") { text = `Stable era · orbiting ${names[cur.host]} and ${names[cur.host2]} together`; col = colors.bodies[cur.host]; }
+    else if (cur.state === "chaotic") { text = "Chaotic era"; col = colors.fg; }
+    else if (cur.state === "ejected") { text = `Ejected at t ≈ ${(cur.t0 * tScale()).toFixed(1)}${tUnit()}`; col = colors.muted; }
+    else { text = `Fell into ${names[cur.host]} at t ≈ ${(cur.t0 * tScale()).toFixed(1)}${tUnit()}`; col = colors.muted; }
+    chip.textContent = text; chip.style.color = col;
+    const S = sys.alive[p] ? T.sunlight({ s: vs, alive: sys.alive }, p, preset.stars, preset.lum) : 0;
+    $("pSun").textContent = S >= 100 ? S.toFixed(0) : S >= 0.01 ? S.toFixed(2) : S.toExponential(0);
+    $("pStable").textContent = eras.eras.filter(e => e.state === "stable" || e.state === "circumbinary").length;
+    $("pChaotic").textContent = eras.eras.filter(e => e.state === "chaotic").length;
+  }
+
   function updateReadouts() {
-    $("ovT").textContent = sys.t.toFixed(2);
+    $("ovT").textContent = (simT * tScale()).toFixed(2) + tUnit();
+    if (eras) updatePlanet();
     const dE = Math.abs((sys.energy() - E0) / E0);
     $("rE").textContent = dE < 1e-15 ? "< 1e-15" : dE.toExponential(1);
     const d = gap();
     $("rD").textContent = d.toExponential(1);
     $("rA").textContent = "×" + fmtBig(d / Math.pow(10, epsExp));
-    $("rH").textContent = horizon === null ? "not yet" : "t ≈ " + horizon.toFixed(1);
+    $("rH").textContent = horizon === null ? "not yet" : "t ≈ " + (horizon * tScale()).toFixed(1) + tUnit();
   }
   function fmtBig(x) { return x < 1000 ? x.toFixed(x < 10 ? 1 : 0) : "10^" + Math.log10(x).toFixed(1); }
 
@@ -535,10 +674,15 @@ footer a { color: inherit; }
   $("play").addEventListener("click", () => setRunning(!running));
   $("restart").addEventListener("click", () => { restart(true); setRunning(true); });
   $("fit").addEventListener("click", () => {
-    const mn = Math.min(W, H); let R = 0.5; for (let i = 0; i < 3; i++) R = Math.max(R, Math.abs(sys.s[4*i]) * mn / W, Math.abs(sys.s[4*i+1]) * mn / H);
-    view.R = R * 1.25; view.cx = 0; view.cy = 0;
+    const mn = Math.min(W, H); let R = 0.5;
+    const fp = followPoint();
+    for (let i = 0; i < sys.m.length; i++) if (sys.alive[i]) R = Math.max(R, Math.abs(vs[4*i] - fp[0]) * mn / W, Math.abs(vs[4*i+1] - fp[1]) * mn / H);
+    view.R = R * 1.25; view.ox = 0; view.oy = 0;
   });
-  function showSpeed() { $("speedOut").textContent = "×" + +Math.pow(2, speedExp).toFixed(2) + " (time units/s)"; }
+  function showSpeed() {
+    const v = Math.pow(2, speedExp) * tScale();
+    $("speedOut").textContent = preset.years ? +v.toFixed(v < 1 ? 2 : 1) + " years/s" : "×" + +v.toFixed(2) + " (time units/s)";
+  }
   $("speed").addEventListener("input", e => { speedExp = +e.target.value; showSpeed(); });
   function showEps() { $("epsOut").textContent = "10^" + epsExp; }
   $("eps").addEventListener("input", e => { epsExp = +e.target.value; showEps(); restart(true); });
@@ -555,7 +699,7 @@ footer a { color: inherit; }
     if (!pointers.has(e.pointerId)) return;
     const prev = pointers.get(e.pointerId); pointers.set(e.pointerId, [e.clientX, e.clientY]);
     if (pointers.size === 1) {
-      const k = scale(); view.cx -= (e.clientX - prev[0]) / k; view.cy += (e.clientY - prev[1]) / k;
+      const k = scale(); view.ox -= (e.clientX - prev[0]) / k; view.oy += (e.clientY - prev[1]) / k;
     } else if (pointers.size === 2) {
       const [a, b] = [...pointers.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
       if (pinch0) view.R *= pinch0 / d; pinch0 = d;
